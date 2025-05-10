@@ -1,0 +1,29 @@
+# app.py
+from flask import Flask, request, jsonify
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import OneHotEncoder
+import joblib
+
+app = Flask(_name_)
+
+# Load model and encoder
+model = joblib.load("house_model.pkl")
+encoder = joblib.load("encoder.pkl")
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    data = request.json
+    df = pd.DataFrame([data])
+    
+    # One-hot encode location
+    location_encoded = encoder.transform(df[["location"]]).toarray()
+    location_df = pd.DataFrame(location_encoded, columns=encoder.get_feature_names_out(["location"]))
+    
+    X = pd.concat([df.drop("location", axis=1), location_df], axis=1)
+    prediction = model.predict(X)[0]
+
+    return jsonify({"predicted_price": round(prediction, 2)})
+
+if _name_ == "_main_":
+    app.run(debug=True)
